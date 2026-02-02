@@ -157,12 +157,16 @@
                     if (response.length > 0) {
                         response.forEach(function (media) {
                             let mediaHtml = `
-                                        <div class="col-6 col-md-3 mb-3">
-                                            <div class="media-item" onclick="selectMedia(this, '${media.file_name}')">
-                                                <img src="{{ asset('uploads/media') }}/${media.file_name}" class="media-img" loading="lazy">
+                                            <div class="col-6 col-md-3 mb-3">
+                                                <div class="media-item border p-1" onclick="selectMedia(this, '${media.file_name}')" style="cursor: pointer;">
+                                                    <img src="{{ asset('uploads/media') }}/${media.file_name}" class="media-img img-fluid" loading="lazy" style="height: 100px; object-fit: cover; width: 100%;">
+                                                    <div class="p-1 text-center text-muted" style="font-size: 0.75rem;">
+                                                        <div class="text-truncate" title="${media.file_name}"><strong>${media.file_name}</strong></div>
+                                                        <div>${media.file_size}</div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    `;
+                                        `;
                             $('#media-grid').append(mediaHtml);
                         });
                     } else {

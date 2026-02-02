@@ -1,5 +1,5 @@
 @extends('dashboard.master')
-@section('title', 'All Media')
+@section('title', 'Trashed Media')
 
 @section('content')
     <div class="content-wrapper">
@@ -7,12 +7,13 @@
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1 class="m-0">All Media</h1>
+                        <h1 class="m-0">Trashed Media</h1>
                     </div>
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
                             <li class="breadcrumb-item"><a href="{{ route('dashboard.home') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item active">All Media</li>
+                            <li class="breadcrumb-item"><a href="{{ route('dashboard.media.index') }}">All Media</a></li>
+                            <li class="breadcrumb-item active">Trashed Media</li>
                         </ol>
                     </div>
                 </div>
@@ -24,7 +25,7 @@
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header">
-                                <h3 class="card-title">All Media</h3>
+                                <h3 class="card-title">Trashed Media</h3>
                             </div>
                             <div class="card-body">
                                 @if ($errors->any())
@@ -47,17 +48,19 @@
                                     @forelse ($media as $item)
                                         <div class="col-md-3 mx-auto border p-1 d-flex flex-column justify-content-between">
                                             <div class="image position-relative">
-                                                <img class="img-fluid" src="{{ asset("uploads/media/" . $item->file_name) }}" />
+                                                <img class="img-fluid"
+                                                    src="{{ route('dashboard.media.view_trash', $item->id) }}" />
                                             </div>
                                             <div class="p-2 text-center text-muted" style="font-size: 0.8rem;">
                                                 <div class="text-truncate" title="{{ $item->file_name }}">
-                                                    <strong>{{ $item->file_name }}</strong></div>
+                                                    <strong>{{ $item->file_name }}</strong>
+                                                </div>
                                                 <div>{{ $item->file_size }}</div>
                                             </div>
                                             <div class="image-footer d-flex justify-content-center text-center mt-2">
-                                                <button class="btn btn-primary btn-sm copybtn mr-1"
-                                                    data-clipboard-text="{{ asset("uploads/media/" . $item->file_name) }}">Copy</button>
-                                                <form action="{{ route("dashboard.media.destroy", $item->id) }}" method="POST">
+                                                <a href="{{ route('dashboard.media.restore', $item->id) }}"
+                                                    class="btn btn-success btn-sm mr-1">Restore</a>
+                                                <form action="{{ route("dashboard.media.delete", $item->id) }}" method="POST">
                                                     @csrf
                                                     @method("DELETE")
                                                     <button class="btn btn-danger btn-sm deletebtn">Delete</button>
@@ -65,7 +68,7 @@
                                             </div>
                                         </div>
                                     @empty
-                                        <div class="alert alert-danger w-100">No media found!</div>
+                                        <div class="alert alert-danger w-100">No trashed media found!</div>
                                     @endforelse
                                 </div>
                             </div>
@@ -84,26 +87,7 @@
 
 @section("script")
     <script src="{{ asset("assets/dashboard/plugins/sweetalert2/sweetalert2.all.js") }}"></script>
-    <script src="{{ asset("assets/dashboard/plugins/clipboardjs/clipboard.min.js") }}"></script>
     <script>
-        var clipboard = new ClipboardJS('.copybtn');
-        clipboard.on('success', function (e) {
-            const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 1500,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.addEventListener('mouseenter', Swal.stopTimer)
-                    toast.addEventListener('mouseleave', Swal.resumeTimer)
-                }
-            });
-            Toast.fire({
-                icon: 'success',
-                title: 'Link copied to clipboard!'
-            });
-        });
         $('.deletebtn').on('click', function (e) {
             e.preventDefault();
             var form = $(this).parents('form');

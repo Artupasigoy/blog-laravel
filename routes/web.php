@@ -87,6 +87,10 @@ Route::name("dashboard.")->prefix("/dashboard")->middleware(["auth"])->group(fun
 
     // media
     Route::get("/media/api", [MediaController::class, "apiIndex"])->name("media.api");
+    Route::get("/media/trashed", [MediaController::class, "trashed"])->name("media.trashed");
+    Route::get("/media/{id}/view-trash", [MediaController::class, "viewTrashFile"])->name("media.view_trash");
+    Route::get("/media/{id}/restore", [MediaController::class, "restore"])->name("media.restore");
+    Route::delete("/media/{id}/delete", [MediaController::class, "delete"])->name("media.delete");
     Route::resource("/media", MediaController::class)->except(["show", "edit", "update"]);
 
     // 4. Manajemen Komentar
