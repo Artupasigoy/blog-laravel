@@ -86,6 +86,7 @@ Route::name("dashboard.")->prefix("/dashboard")->middleware(["auth"])->group(fun
     Route::resource("/posts", DashboardPostController::class)->except(["show"]);
 
     // media
+    Route::get("/media/api", [MediaController::class, "apiIndex"])->name("media.api");
     Route::resource("/media", MediaController::class)->except(["show", "edit", "update"]);
 
     // 4. Manajemen Komentar

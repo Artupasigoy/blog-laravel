@@ -34,15 +34,24 @@ class CategoryController extends Controller
             "title" => ["required", "string", "max:150"],
             "slug" => ["required", "max:150", "unique:categories,slug"],
             "description" => ["nullable", "string"],
-            "image" => ["nullable", "image"],
+            "image" => ["nullable"], // Bisa file image atau string
             "status" => ["required", Rule::in(["0", "1"])],
         ]);
 
         // Upload gambar jika ada
-        if (Arr::has($validated, "image")) {
-            $image = $request->file("image");
-            $imageName = md5(time() . rand(11111, 99999)) . "." . $image->extension();
-            $image->move(public_path("uploads/category"), $imageName);
+        $imageName = null;
+        if ($request->filled("image")) {
+            if ($request->hasFile("image")) {
+                $image = $request->file("image");
+                $imageName = md5(time() . rand(11111, 99999)) . "." . $image->extension();
+                $image->move(public_path("uploads/category"), $imageName);
+            } else {
+                // Jika string (Media Manager)
+                $imageName = $request->image;
+                if (File::exists(public_path("uploads/media/" . $imageName))) {
+                    File::copy(public_path("uploads/media/" . $imageName), public_path("uploads/category/" . $imageName));
+                }
+            }
         }
 
         // Simpan ke database
@@ -50,7 +59,7 @@ class CategoryController extends Controller
             "title" => $validated["title"],
             "slug" => $validated["slug"],
             "description" => Arr::has($validated, "description") ? $validated["description"] : null,
-            "image" => Arr::has($validated, "image") ? $imageName : null,
+            "image" => $imageName,
             "status" => $validated["status"],
         ]);
         return redirect()->route("dashboard.categories.index")->with("success", "Kategori berhasil dibuat!");
@@ -81,23 +90,36 @@ class CategoryController extends Controller
                 "title" => ["required", "string", "max:150"],
                 "slug" => ["required", "max:150", Rule::unique("categories", "slug")->ignore($id)],
                 "description" => ["nullable", "string"],
-                "image" => ["nullable", "image"],
+                "image" => ["nullable"],
                 "status" => ["required", Rule::in(["0", "1"])],
             ]);
             $category->title = $validated["title"];
             $category->slug = $validated["slug"];
             $category->description = Arr::has($validated, "description") ? $validated["description"] : null;
             $category->status = $validated["status"];
-            if (Arr::has($validated, "image")) {
-                $image = $request->file("image");
-                $imageName = md5(time() . rand(11111, 99999)) . "." . $image->extension();
-                $image->move(public_path("uploads/category"), $imageName);
-                if ($category->image) {
-                    if (File::exists(public_path("uploads/category/" . $category->image))) {
+
+            if ($request->filled("image")) {
+                // Hapus image lama
+                if ($category->image && File::exists(public_path("uploads/category/" . $category->image))) {
+                    try {
                         File::delete(public_path("uploads/category/" . $category->image));
+                    } catch (\Exception $e) {
                     }
                 }
-                $category->image = $imageName;
+
+                if ($request->hasFile("image")) {
+                    $image = $request->file("image");
+                    $imageName = md5(time() . rand(11111, 99999)) . "." . $image->extension();
+                    $image->move(public_path("uploads/category"), $imageName);
+                    $category->image = $imageName;
+                } else {
+                    // String from Media Manager
+                    $imageName = $request->image;
+                    if (File::exists(public_path("uploads/media/" . $imageName))) {
+                        File::copy(public_path("uploads/media/" . $imageName), public_path("uploads/category/" . $imageName));
+                    }
+                    $category->image = $imageName;
+                }
             }
             $category->save();
             return redirect()->route("dashboard.categories.index")->with("success", "Kategori berhasil diperbarui!");

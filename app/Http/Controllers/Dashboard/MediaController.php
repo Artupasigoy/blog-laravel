@@ -38,11 +38,31 @@ class MediaController extends Controller
         $image->move(public_path("uploads/media"), $imageName);
 
         // Simpan referensi file ke database
-        Media::create([
+        $media = Media::create([
             "user_id" => Auth::id(),
             "file_name" => $imageName,
         ]);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Media berhasil diunggah!',
+                'data' => $media
+            ]);
+        }
+
         return redirect()->route("dashboard.media.index")->with("success", "Media berhasil diunggah!");
+    }
+
+    // API: Ambil daftar media untuk modal (JSON)
+    public function apiIndex()
+    {
+        if (Auth::user()->role == 3) {
+            $media = Media::orderBy("id", "DESC")->get();
+        } else {
+            $media = User::find(Auth::id())->media()->orderBy("id", "DESC")->get();
+        }
+        return response()->json($media);
     }
 
     public function destroy(string $id)

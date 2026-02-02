@@ -46,13 +46,22 @@ class PostController extends Controller
             "featured" => ["nullable", Rule::in(["0", "1"])],
             "comment" => ["nullable", Rule::in(["0", "1"])],
             "status" => ["required", Rule::in(["0", "1"])],
-            "thumbnail" => ["required", "image"],
+            "thumbnail" => ["required"], // Bisa file image atau string filename
         ]);
 
         // 2. Upload Gambar Thumbnail
-        $image = $request->file("thumbnail");
-        $imageName = md5(time() . rand(11111, 99999)) . "." . $image->extension();
-        $image->move(public_path("uploads/post"), $imageName);
+        if ($request->hasFile("thumbnail")) {
+            $image = $request->file("thumbnail");
+            $imageName = md5(time() . rand(11111, 99999)) . "." . $image->extension();
+            $image->move(public_path("uploads/post"), $imageName);
+        } else {
+            // Jika input adalah string (dari Media Manager)
+            $imageName = $request->thumbnail;
+            // Copy dari folder media ke folder post (opsional, agar terorganisir)
+            if (File::exists(public_path("uploads/media/" . $imageName))) {
+                File::copy(public_path("uploads/media/" . $imageName), public_path("uploads/post/" . $imageName));
+            }
+        }
 
         // 3. Simpan Data Post ke Database
         $post = Post::create([
@@ -102,7 +111,7 @@ class PostController extends Controller
                 "featured" => ["nullable", Rule::in(["0", "1"])],
                 "comment" => ["nullable", Rule::in(["0", "1"])],
                 "status" => ["required", Rule::in(["0", "1"])],
-                "thumbnail" => ["nullable", "image"],
+                "thumbnail" => ["nullable"],
             ]);
             $post->title = $validated["title"];
             $post->slug = Str::slug($validated["slug"]);
@@ -111,14 +120,30 @@ class PostController extends Controller
             $post->is_featured = Arr::has($validated, "featured");
             $post->enable_comment = Arr::has($validated, "comment");
             $post->status = Auth::user()->role == 1 ? "0" : $validated["status"];
-            if ($request->hasFile("thumbnail")) {
-                $image = $request->file("thumbnail");
-                $imageName = md5(time() . rand(11111, 99999)) . "." . $image->extension();
-                $image->move(public_path("uploads/post"), $imageName);
+            if ($request->filled("thumbnail")) {
+                // Hapus thumbnail lama
                 if (File::exists(public_path("uploads/post/" . $post->thumbnail))) {
-                    File::delete(public_path("uploads/post/" . $post->thumbnail));
+                    try {
+                        File::delete(public_path("uploads/post/" . $post->thumbnail));
+                    } catch (\Exception $e) {
+                        // Ignore delete error
+                    }
                 }
-                $post->thumbnail = $imageName;
+
+                if ($request->hasFile("thumbnail")) {
+                    // Jika upload manual
+                    $image = $request->file("thumbnail");
+                    $imageName = md5(time() . rand(11111, 99999)) . "." . $image->extension();
+                    $image->move(public_path("uploads/post"), $imageName);
+                    $post->thumbnail = $imageName;
+                } else {
+                    // Jika pilih dari Media Manager (String)
+                    $imageName = $request->thumbnail;
+                    if (File::exists(public_path("uploads/media/" . $imageName))) {
+                        File::copy(public_path("uploads/media/" . $imageName), public_path("uploads/post/" . $imageName));
+                    }
+                    $post->thumbnail = $imageName;
+                }
             }
             $post->save();
             if (Arr::has($validated, "tags")) {
