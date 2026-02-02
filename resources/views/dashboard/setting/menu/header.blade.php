@@ -32,7 +32,7 @@
                             @if ($errors->any())
                             <div class="alert alert-danger alert-dismissible">
                                 <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                                <h5><i class="icon fas fa-ban"></i> Error!</h5>
+                                <h5><i class="icon fas fa-ban"></i> Gagal!</h5>
                                 @foreach ($errors->all() as $error)
                                 <p class="m-0">{{ $error }}</p>
                                 @endforeach
@@ -41,7 +41,7 @@
                             @if (session("success"))
                             <div class="alert alert-success alert-dismissible">
                                 <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                                <h5><i class="icon fas fa-check"></i> Success!</h5>
+                                <h5><i class="icon fas fa-check"></i> Sukses!</h5>
                                 <p class="m-0">{{ session("success") }}</p>
                             </div>
                             @endif
@@ -111,7 +111,7 @@
 	var menuEditor = new MenuEditor('element-id', { maxLevel: 0 });
     var nestedData = {!! $menu !!}
     menuEditor.onClickDelete((event) => {
-        if (confirm('Do you want to delete the item ' + event.item.getDataset().text)) {
+        if (confirm('Apakah Anda yakin ingin menghapus item ' + event.item.getDataset().text + '?')) {
             event.item.remove();
         }
     });

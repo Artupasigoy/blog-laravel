@@ -12,12 +12,15 @@ use Illuminate\Support\Facades\File;
 
 class SiteSettingController extends Controller
 {
-    public function index() {
+    public function index()
+    {
         $sitesettings = SiteSetting::first();
         return view("dashboard.setting.site", compact("sitesettings"));
     }
 
-    public function update(Request $request) {
+    // Update Pengaturan Global Website
+    public function update(Request $request)
+    {
         $validated = $request->validate([
             "site_title" => ["required", "string", "min:2", "max:255"],
             "tagline" => ["required", "string", "min:2", "max:255"],
@@ -35,23 +38,23 @@ class SiteSettingController extends Controller
         $sitesettings->enable_registration = Arr::has($validated, "enable_registration") ? "1" : "0";
         if (Arr::has($validated, "logo_dark")) {
             $image = $request->file("logo_dark");
-            $imageName = "logo_dark_".Str::random(5).".".$image->extension();
+            $imageName = "logo_dark_" . Str::random(5) . "." . $image->extension();
             $image->move(public_path("uploads/logo"), $imageName);
-            if (File::exists(public_path("uploads/logo/".$sitesettings->logo_dark))) {
-                File::delete(public_path("uploads/logo/".$sitesettings->logo_dark));
+            if (File::exists(public_path("uploads/logo/" . $sitesettings->logo_dark))) {
+                File::delete(public_path("uploads/logo/" . $sitesettings->logo_dark));
             }
             $sitesettings->logo_dark = $imageName;
         }
         if (Arr::has($validated, "logo_light")) {
             $image = $request->file("logo_light");
-            $imageName = "logo_light_".Str::random(5).".".$image->extension();
+            $imageName = "logo_light_" . Str::random(5) . "." . $image->extension();
             $image->move(public_path("uploads/logo"), $imageName);
-            if (File::exists(public_path("uploads/logo/".$sitesettings->logo_light))) {
-                File::delete(public_path("uploads/logo/".$sitesettings->logo_light));
+            if (File::exists(public_path("uploads/logo/" . $sitesettings->logo_light))) {
+                File::delete(public_path("uploads/logo/" . $sitesettings->logo_light));
             }
             $sitesettings->logo_light = $imageName;
         }
         $sitesettings->save();
-        return back()->with("success", "Site Settings updated!");
+        return back()->with("success", "Pengaturan Situs diperbarui!");
     }
 }

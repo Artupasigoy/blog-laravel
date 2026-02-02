@@ -8,12 +8,20 @@ use Illuminate\Http\Request;
 
 class PageController extends Controller
 {
-    public function index($slug) {
+    /**
+     * Menampilkan halaman statis (contoh: About, Contact).
+     *
+     * @param string $slug Slug halaman
+     */
+    public function index($slug)
+    {
         $page = Page::whereStatus(true)->whereSlug($slug)->first();
+
         if ($page) {
             return view("frontend.page.index", compact("page"));
-            return $page;
         }
+
+        // 404 jika halaman tidak ditemukan atau tidak aktif
         return abort(404);
     }
 }

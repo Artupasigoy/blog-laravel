@@ -11,11 +11,13 @@ use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
-    public function index() {
-        $posts = Post::count();
-        $comments = Comment::count();
-        $users = User::count();
-        $categories = Category::count();
+    // Dashboard Utama: Statistik Ringkas
+    public function index()
+    {
+        $posts = Post::count(); // Jumlah Artikel
+        $comments = Comment::count(); // Jumlah Komentar
+        $users = User::count(); // Jumlah User
+        $categories = Category::count(); // Jumlah Kategori
         return view("dashboard.home.index", compact("posts", "comments", "users", "categories"));
     }
 }

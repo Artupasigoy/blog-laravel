@@ -12,7 +12,7 @@ class Menu extends Model
     protected $table = "menus";
 
     protected $fillable = [
-        "header_menu",
-        "footer_menu",
+        "header_menu", // Disimpan dalam format JSON
+        "footer_menu", // Disimpan dalam format JSON
     ];
 }

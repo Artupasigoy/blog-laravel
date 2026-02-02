@@ -24,7 +24,9 @@ class Category extends Model
         'status' => 'boolean',
     ];
 
-    public function posts() {
+    // Relasi ke Post (Kategori punya banyak artikel)
+    public function posts()
+    {
         return $this->hasMany(Post::class);
     }
 }

@@ -16,7 +16,8 @@ use Illuminate\Validation\Rule;
 
 class PostController extends Controller
 {
-    public function index() {
+    public function index()
+    {
         if (Auth::user()->role == 3) {
             $posts = Post::with(["category", "tags", "user"])->withCount(["comments"])->orderBy("id", "DESC")->paginate(20);
         } else {
@@ -25,13 +26,17 @@ class PostController extends Controller
         return view("dashboard.post.index", compact("posts"));
     }
 
-    public function create() {
+    public function create()
+    {
         $categories = Category::where("status", true)->orderBy("title", "ASC")->get();
         $tags = Tag::orderBy("name", "ASC")->get();
         return view("dashboard.post.add", compact("categories", "tags"));
     }
 
-    public function store(Request $request) {
+    // Menyimpan artikel baru
+    public function store(Request $request)
+    {
+        // 1. Validasi Input
         $validated = $request->validate([
             "title" => ["required", "string"],
             "slug" => ["required", "string", "unique:posts,slug"],
@@ -43,9 +48,13 @@ class PostController extends Controller
             "status" => ["required", Rule::in(["0", "1"])],
             "thumbnail" => ["required", "image"],
         ]);
+
+        // 2. Upload Gambar Thumbnail
         $image = $request->file("thumbnail");
-        $imageName = md5(time().rand(11111, 99999)).".".$image->extension();
+        $imageName = md5(time() . rand(11111, 99999)) . "." . $image->extension();
         $image->move(public_path("uploads/post"), $imageName);
+
+        // 3. Simpan Data Post ke Database
         $post = Post::create([
             "user_id" => Auth::user()->id,
             "title" => $validated["title"],
@@ -55,18 +64,22 @@ class PostController extends Controller
             "thumbnail" => $imageName,
             "is_featured" => Arr::has($validated, "featured"),
             "enable_comment" => Arr::has($validated, "comment"),
-            "status" => Auth::user()->role == 1 ? "0" : $validated["status"],
+            "status" => Auth::user()->role == 1 ? "0" : $validated["status"], // Role 1 (User biasa) otomatis draft
         ]);
+
+        // 4. Simpan Tags (Otomatis buat jika belum ada)
         if (Arr::has($validated, "tags")) {
             foreach ($validated["tags"] as $tag) {
+                // Logika: Cari tag berdasarkan nama, jika tidak ada maka buat baru
                 $tag = Tag::firstOrCreate(["name" => Str::lower($tag)]);
                 $post->tags()->attach([$tag->id]);
             }
         }
-        return redirect()->route("dashboard.posts.index")->with("success", "Post created!");
+        return redirect()->route("dashboard.posts.index")->with("success", "Artikel berhasil dibuat!");
     }
 
-    public function edit($id) {
+    public function edit($id)
+    {
         $post = Post::with(["tags"])->withCount(["tags"])->find($id);
         if ($post && Gate::allows("update-post", $post)) {
             $categories = Category::where("status", true)->orderBy("title", "ASC")->get();
@@ -76,7 +89,8 @@ class PostController extends Controller
         return back()->withErrors("Post not exists!");
     }
 
-    public function update(Request $request, $id) {
+    public function update(Request $request, $id)
+    {
         $post = Post::find($id);
         if ($post && Gate::allows("update-post", $post)) {
             $validated = $request->validate([
@@ -99,10 +113,10 @@ class PostController extends Controller
             $post->status = Auth::user()->role == 1 ? "0" : $validated["status"];
             if ($request->hasFile("thumbnail")) {
                 $image = $request->file("thumbnail");
-                $imageName = md5(time().rand(11111, 99999)).".".$image->extension();
+                $imageName = md5(time() . rand(11111, 99999)) . "." . $image->extension();
                 $image->move(public_path("uploads/post"), $imageName);
-                if (File::exists(public_path("uploads/post/".$post->thumbnail))) {
-                    File::delete(public_path("uploads/post/".$post->thumbnail));
+                if (File::exists(public_path("uploads/post/" . $post->thumbnail))) {
+                    File::delete(public_path("uploads/post/" . $post->thumbnail));
                 }
                 $post->thumbnail = $imageName;
             }
@@ -122,7 +136,8 @@ class PostController extends Controller
         return back()->withErrors("Post not exists!");
     }
 
-    public function destroy($id) {
+    public function destroy($id)
+    {
         $post = Post::find($id);
         if ($post && Gate::allows("update-post", $post)) {
             $post->delete();
@@ -131,7 +146,8 @@ class PostController extends Controller
         return back()->withErrors("Post not exists!");
     }
 
-    public function status($id) {
+    public function status($id)
+    {
         $post = Post::find($id);
         if ($post && Gate::allows("update-post", $post)) {
             if (Auth::user()->role == 1) {
@@ -145,7 +161,8 @@ class PostController extends Controller
         return back()->withErrors("Post not exists!");
     }
 
-    public function featured($id) {
+    public function featured($id)
+    {
         $post = Post::find($id);
         if ($post) {
             $post->is_featured = $post->is_featured ? "0" : "1";
@@ -156,7 +173,8 @@ class PostController extends Controller
         return back()->withErrors("Post not exists!");
     }
 
-    public function comment($id) {
+    public function comment($id)
+    {
         $post = Post::find($id);
         if ($post && Gate::allows("update-post", $post)) {
             $post->enable_comment = $post->enable_comment ? "0" : "1";
@@ -168,24 +186,38 @@ class PostController extends Controller
     }
 
 
-    public function trashed() {
+    public function trashed()
+    {
         if (Auth::user()->role == 3) {
-            $posts = Post::onlyTrashed()->with(["category" => function($q) {
-                $q->withTrashed();
-            }, "tags", "user"])->withCount(["comments" => function($q) {
-                $q->withTrashed();
-            }])->orderBy("id", "DESC")->paginate(20);
+            $posts = Post::onlyTrashed()->with([
+                "category" => function ($q) {
+                    $q->withTrashed();
+                },
+                "tags",
+                "user"
+            ])->withCount([
+                        "comments" => function ($q) {
+                            $q->withTrashed();
+                        }
+                    ])->orderBy("id", "DESC")->paginate(20);
         } else {
-            $posts = Post::onlyTrashed()->with(["category" => function($q) {
-                $q->withTrashed();
-            }, "tags", "user"])->withCount(["comments" => function($q) {
-                $q->withTrashed();
-            }])->orderBy("id", "DESC")->where("user_id", Auth::id())->paginate(20);
+            $posts = Post::onlyTrashed()->with([
+                "category" => function ($q) {
+                    $q->withTrashed();
+                },
+                "tags",
+                "user"
+            ])->withCount([
+                        "comments" => function ($q) {
+                            $q->withTrashed();
+                        }
+                    ])->orderBy("id", "DESC")->where("user_id", Auth::id())->paginate(20);
         }
         return view("dashboard.post.trashed", compact("posts"));
     }
 
-    public function restore($id) {
+    public function restore($id)
+    {
         $post = Post::onlyTrashed()->find($id);
         if ($post && Gate::allows("update-post", $post)) {
             if ($post->category()->withTrashed()->first()->deleted_at) {
@@ -197,11 +229,12 @@ class PostController extends Controller
         return back()->withErrors("Post not exists!");
     }
 
-    public function delete($id) {
+    public function delete($id)
+    {
         $post = Post::onlyTrashed()->find($id);
         if ($post && Gate::allows("update-post", $post)) {
-            if (File::exists(public_path("uploads/post/".$post->thumbnail))) {
-                File::delete(public_path("uploads/post/".$post->thumbnail));
+            if (File::exists(public_path("uploads/post/" . $post->thumbnail))) {
+                File::delete(public_path("uploads/post/" . $post->thumbnail));
             }
             $post->tags()->sync([]);
             $post->comments()->forceDelete();

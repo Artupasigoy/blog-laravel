@@ -14,7 +14,9 @@ class Tag extends Model
         "name",
     ];
 
-    public function posts() {
+    // Relasi ke Post (Tag dimiliki banyak artikel)
+    public function posts()
+    {
         return $this->belongsToMany(Post::class);
     }
 }

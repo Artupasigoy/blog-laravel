@@ -10,32 +10,46 @@ use Illuminate\Support\Facades\Auth;
 
 class SignupController extends Controller
 {
-    public function index() {
+    // Menampilkan halaman Pendaftaran
+    public function index()
+    {
         if (Auth::check()) {
             return redirect()->route("dashboard.home");
         }
+        // Cek pengaturan apakah registrasi diizinkan
         $enable_registration = SiteSetting::first("enable_registration")->enable_registration;
         return view("auth.signup", compact("enable_registration"));
     }
 
-    public function signup(Request $request) {
+    // Proses Pendaftaran User Baru
+    public function signup(Request $request)
+    {
         if (Auth::check()) {
             return redirect()->route("frontend.home");
         }
+
+        // Pastikan registrasi aktif sebelum memproses
         $enable_registration = SiteSetting::first("enable_registration")->enable_registration;
         if (!$enable_registration) {
             return back();
         }
+
+        // Validasi input pendaftaran
         $validated = $request->validate([
             "name" => ["required", "string", "min:3", "max:100"],
             "username" => ["required", "string", "regex:/\w*$/", "unique:users,username", "max:100"],
             "email" => ["required", "email:rfc", "unique:users,email", "max:255"],
             "password" => ["required", "confirmed", "min:6", "max:100"],
-            "password_confirmation" => ["required"],
-            "agree" => ["required", "accepted"],
+            "password_confirmation" => ["required"], // Konfirmasi password
+            "agree" => ["required", "accepted"], // Persetujuan S&K
         ]);
+
+        // Buat user baru
         $user = User::create($request->only(["name", "username", "email", "password"]));
+
+        // Login otomatis setelah daftar
         Auth::loginUsingId($user->id);
+
         return redirect()->route("dashboard.home");
     }
 }

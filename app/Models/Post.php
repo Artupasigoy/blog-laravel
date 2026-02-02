@@ -26,33 +26,44 @@ class Post extends Model
         "status",
     ];
 
+    // Cast atribut ke tipe data primitif
     protected $casts = [
-        'is_featured' => 'boolean',
-        'enable_comment' => 'boolean',
-        'status' => 'boolean',
+        'is_featured' => 'boolean', // Artikel unggulan?
+        'enable_comment' => 'boolean', // Komentar aktif?
+        'status' => 'boolean', // Status publikasi (Aktif/Draft)
     ];
 
-    public function category() {
+    // Relasi ke Kategori (Artikel milik satu kategori)
+    public function category()
+    {
         return $this->belongsTo(Category::class);
     }
 
-    public function user() {
+    // Relasi ke User (Penulis artikel)
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
 
-    public function readTime() {
+    // Menghitung estimasi waktu baca (berdasarkan jumlah kata)
+    public function readTime()
+    {
         $minutesToRead = round(Str::wordCount(static::find($this->id)->content) / 200);
         if ($minutesToRead < 1) {
             return "Less than a minute";
         }
-        return $minutesToRead." Mins Read";
+        return $minutesToRead . " Mins Read";
     }
 
-    public function tags() {
+    // Relasi ke Tag (Artikel punya banyak tag)
+    public function tags()
+    {
         return $this->belongsToMany(Tag::class);
     }
 
-    public function comments() {
+    // Relasi ke Komentar (Artikel punya banyak komentar)
+    public function comments()
+    {
         return $this->hasMany(Comment::class)->orderBy("created_at", "ASC");
     }
 }

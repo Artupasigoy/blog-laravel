@@ -12,7 +12,7 @@ class Media extends Model
     protected $table = "media";
 
     protected $fillable = [
-        "user_id",
-        "file_name",
+        "user_id", // Pengupload
+        "file_name", // Nama file fisik
     ];
 }

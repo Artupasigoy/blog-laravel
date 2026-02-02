@@ -13,10 +13,10 @@ class Page extends Model
     protected $table = "pages";
 
     protected $fillable = [
-        "title",
-        "slug",
-        "content",
-        "status",
+        "title", // Judul Halaman
+        "slug", // URL Slug (SEO)
+        "content", // Isi Konten
+        "status", // Status Publikasi
     ];
 
     protected $casts = [

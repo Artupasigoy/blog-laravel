@@ -12,13 +12,17 @@ use Illuminate\Support\Facades\File;
 
 class ProfileController extends Controller
 {
-    public function index() {
+    public function index()
+    {
         $user = Auth::user();
         return view("dashboard.setting.profile", compact("user"));
     }
 
-    public function update(Request $request) {
+    // Update data profil user sendiri
+    public function update(Request $request)
+    {
         $user = User::find(Auth::id());
+        // Validasi input profil
         $validated = $request->validate([
             "name" => ["required", "string", "min:2", "max:200"],
             "username" => ["required", "string", "min:3", "max:150", Rule::unique("users", "username")->ignore($user->id), "regex:/\w*$/"],
@@ -42,24 +46,26 @@ class ProfileController extends Controller
         $user->youtube = Arr::has($validated, "youtube") ? $validated["youtube"] : $user->youtube;
         if (Arr::has($validated, "profile")) {
             $image = $request->file("profile");
-            $imageName = md5(time().rand(11111, 99999)).".".$image->extension();
+            $imageName = md5(time() . rand(11111, 99999)) . "." . $image->extension();
             $image->move(public_path("uploads/author"), $imageName);
             if ($user->profile) {
-                if (File::exists(public_path("uploads/author/".$user->profile))) {
-                    File::delete(public_path("uploads/author/".$user->profile));
+                if (File::exists(public_path("uploads/author/" . $user->profile))) {
+                    File::delete(public_path("uploads/author/" . $user->profile));
                 }
             }
             $user->profile = $imageName;
         }
         $user->save();
-        return back()->with("success", "Profile updated!");
+        return back()->with("success", "Profil berhasil diperbarui!");
     }
 
-    public function password() {
+    public function password()
+    {
         return view("dashboard.setting.password");
     }
 
-    public function passwordUpdate(Request $request) {
+    public function passwordUpdate(Request $request)
+    {
         $user = User::find(Auth::id());
         $validated = $request->validate([
             "current_password" => ["required", "current_password"],
@@ -68,6 +74,6 @@ class ProfileController extends Controller
         ]);
         $user->password = $validated["new_password"];
         $user->save();
-        return back()->with("success", "Password changed!");
+        return back()->with("success", "Password berhasil diubah!");
     }
 }

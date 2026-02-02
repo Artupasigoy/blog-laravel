@@ -23,7 +23,7 @@ class User extends Authenticatable
     public const IS_VISITOR = 1;
     public const IS_AUTHOR = 2;
     public const IS_ADMIN = 3;
-    
+
     protected $fillable = [
         'name',
         'username',
@@ -61,21 +61,41 @@ class User extends Authenticatable
         'status' => 'boolean',
     ];
 
-    protected function username(): Attribute {
+    protected function username(): Attribute
+    {
         return Attribute::make(
-            set: fn ($value) => Str::lower($value)
+            set: fn($value) => Str::lower($value)
         );
     }
 
-    public function posts() {
+    // Relasi ke model Post (Satu user bisa punya banyak post)
+    public function posts()
+    {
         return $this->hasMany(Post::class);
     }
 
-    public function comments() {
+    // Mendapatkan URL gambar profil (thumbnail)
+    public function getPictureAttribute($value)
+    {
+        if ($value) {
+            return asset("/storage/images/user_profile/" . $value);
+        }
+        return asset("/storage/images/user_profile/default_profile_picture.jpg");
+    }
+
+    // Relasi ke tabel social_media melalui tabel pivot
+    public function social_media()
+    {
+        return $this->belongsToMany(SocialMedia::class, "user_social_media");
+    }
+
+    public function comments()
+    {
         return $this->hasMany(Comment::class);
     }
 
-    public function media() {
+    public function media()
+    {
         return $this->hasMany(Media::class);
     }
 }

@@ -12,13 +12,13 @@ class SiteSetting extends Model
     protected $table = "site_settings";
 
     protected $fillable = [
-        "site_title",
-        "tagline",
-        "description",
-        "logo_dark",
-        "logo_light",
-        "copyright_text",
-        "enable_registration",
+        "site_title", // Judul Website
+        "tagline", // Slogan
+        "description", // Deskripsi SEO
+        "logo_dark", // Logo Mode Gelap
+        "logo_light", // Logo Mode Terang
+        "copyright_text", // Teks Footer
+        "enable_registration", // Izinkan Registrasi User?
     ];
 
     protected $casts = [

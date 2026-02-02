@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Gate;
 
 class MediaController extends Controller
 {
-    public function index() {
+    public function index()
+    {
         if (Auth::user()->role == 3) {
             $media = Media::orderBy("id", "DESC")->paginate(20);
         } else {
@@ -21,33 +22,39 @@ class MediaController extends Controller
         return view("dashboard.media.index", compact("media"));
     }
 
-    public function create() {
+    public function create()
+    {
         return view("dashboard.media.add");
     }
 
-    public function store(Request $request) {
+    // Upload Media Baru
+    public function store(Request $request)
+    {
         $validated = $request->validate([
             "image" => ["required", "image"],
         ]);
         $image = $request->file("image");
-        $imageName = md5(time().rand(11111, 99999)).".".$image->extension();
+        $imageName = md5(time() . rand(11111, 99999)) . "." . $image->extension();
         $image->move(public_path("uploads/media"), $imageName);
+
+        // Simpan referensi file ke database
         Media::create([
             "user_id" => Auth::id(),
             "file_name" => $imageName,
         ]);
-        return redirect()->route("dashboard.media.index")->with("success", "Media uploaded!");
+        return redirect()->route("dashboard.media.index")->with("success", "Media berhasil diunggah!");
     }
 
-    public function destroy(string $id) {
+    public function destroy(string $id)
+    {
         $media = Media::find($id);
         if ($media && Gate::allows("update-media", $media)) {
-            if (File::exists(public_path("uploads/media/".$media->file_name))) {
-                File::delete(public_path("uploads/media/".$media->file_name));
+            if (File::exists(public_path("uploads/media/" . $media->file_name))) {
+                File::delete(public_path("uploads/media/" . $media->file_name));
             }
             $media->delete();
-            return back()->with("success", "Media deleted!");
+            return back()->with("success", "Media berhasil dihapus!");
         }
-        return back()->withErrors("Media not exists!");
+        return back()->withErrors("Media tidak ditemukan!");
     }
 }

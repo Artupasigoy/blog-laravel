@@ -12,18 +12,24 @@ use Illuminate\Support\Facades\File;
 
 class UserController extends Controller
 {
-    public function index() {
-        $users = User::withCount(["posts" => function($q) {
-            $q->withTrashed();
-        }])->orderBy("role", "DESC")->paginate(20);
+    public function index()
+    {
+        $users = User::withCount([
+            "posts" => function ($q) {
+                $q->withTrashed();
+            }
+        ])->orderBy("role", "DESC")->paginate(20);
         return view("dashboard.user.index", compact("users"));
     }
 
-    public function create() {
+    public function create()
+    {
         return view("dashboard.user.add");
     }
 
-    public function store(Request $request) {
+    // Simpan User Baru
+    public function store(Request $request)
+    {
         $validated = $request->validate([
             "name" => ["required", "string"],
             "username" => ["required", "unique:users,username", "string", "regex:/\w*$/"],
@@ -36,7 +42,7 @@ class UserController extends Controller
         ]);
         if (Arr::has($validated, "profile")) {
             $image = $request->file("profile");
-            $imageName = md5(time().rand(11111, 99999)).".".$image->extension();
+            $imageName = md5(time() . rand(11111, 99999)) . "." . $image->extension();
             $image->move(public_path("uploads/author"), $imageName);
         }
         User::create([
@@ -49,22 +55,25 @@ class UserController extends Controller
             "status" => $validated["status"],
             "profile" => Arr::has($validated, "profile") ? $imageName : null,
         ]);
-        return redirect()->route("dashboard.users.index")->with("success", "User created!");
+        return redirect()->route("dashboard.users.index")->with("success", "User berhasil dibuat!");
     }
 
-    public function show(string $id)  {
+    public function show(string $id)
+    {
         return abort(404);
     }
 
-    public function edit(string $id) {
+    public function edit(string $id)
+    {
         $user = User::find($id);
         if ($user) {
             return view("dashboard.user.edit", compact("user"));
         }
-        return back()->withErrors("User not exists!");
+        return back()->withErrors("User tidak ditemukan!");
     }
 
-    public function update(Request $request, string $id) {
+    public function update(Request $request, string $id)
+    {
         $user = User::find($id);
         if ($user) {
             $rules = [
@@ -87,52 +96,54 @@ class UserController extends Controller
             $user->status = Arr::has($validated, "status") ? $validated["status"] : $user->status;
             if (Arr::has($validated, "profile")) {
                 $image = $request->file("profile");
-                $imageName = md5(time().rand(11111, 99999)).".".$image->extension();
+                $imageName = md5(time() . rand(11111, 99999)) . "." . $image->extension();
                 $image->move(public_path("uploads/author"), $imageName);
                 if ($user->profile) {
-                    if (File::exists(public_path("uploads/author/".$user->profile))) {
-                        File::delete(public_path("uploads/author/".$user->profile));
+                    if (File::exists(public_path("uploads/author/" . $user->profile))) {
+                        File::delete(public_path("uploads/author/" . $user->profile));
                     }
                 }
                 $user->profile = $imageName;
             }
             $user->save();
-            return redirect()->route("dashboard.users.index")->with("success", "User updated!");
+            return redirect()->route("dashboard.users.index")->with("success", "User berhasil diperbarui!");
         }
-        return back()->withErrors("User not exists!");
+        return back()->withErrors("User tidak ditemukan!");
     }
 
-    public function destroy(string $id) {
+    public function destroy(string $id)
+    {
         $user = User::find($id);
         if ($user) {
             if ($user == Auth::user()) {
-                return back()->withErrors("You can't delete yourself!");
+                return back()->withErrors("Anda tidak bisa menghapus diri sendiri!");
             }
             $user->media()->delete();
             $user->posts()->forceDelete();
             $user->comments()->forceDelete();
             if ($user->profile) {
-                if (File::exists(public_path("uploads/author/".$user->profile))) {
-                    File::delete(public_path("uploads/author/".$user->profile));
+                if (File::exists(public_path("uploads/author/" . $user->profile))) {
+                    File::delete(public_path("uploads/author/" . $user->profile));
                 }
             }
             $user->delete();
-            return back()->with("success", "User deleted!");
+            return back()->with("success", "User berhasil dihapus!");
         }
-        return back()->withErrors("User not exists!");
+        return back()->withErrors("User tidak ditemukan!");
     }
 
-    public function status($id) {
+    public function status($id)
+    {
         $user = User::find($id);
         if ($user) {
             if ($user == Auth::user()) {
-                return back()->withErrors("You can't change your status!");
+                return back()->withErrors("Anda tidak bisa mengubah status sendiri!");
             }
             $user->status = $user->status ? "0" : "1";
             $user->save();
-            $alert = $user->status ? "User activated!" : "User inactivated!";
+            $alert = $user->status ? "User diaktifkan!" : "User dinonaktifkan!";
             return back()->with("success", $alert);
         }
-        return back()->withErrors("User not exists!");
+        return back()->withErrors("User tidak ditemukan!");
     }
 }

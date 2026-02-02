@@ -9,12 +9,15 @@ use Illuminate\Validation\Rule;
 
 class SocialMediaController extends Controller
 {
-    public function index() {
+    public function index()
+    {
         $socialmedia = SocialMedia::paginate(20);
         return view("dashboard.setting.socialmedia", compact("socialmedia"));
     }
 
-    public function add(Request $request) {
+    // Tambah Akun Sosial Media Baru
+    public function add(Request $request)
+    {
         $validated = $request->validate([
             "title" => ["required", "string", "min:1", "max:100"],
             "icon" => ["required", "string", "min:1", "max:100"],
@@ -23,26 +26,28 @@ class SocialMediaController extends Controller
             "status" => ["required", Rule::in(["0", "1"])],
         ]);
         SocialMedia::create($validated);
-        return back()->with("success", "Social media added!");
+        return back()->with("success", "Sosial media berhasil ditambahkan!");
     }
 
-    public function status($id) {
+    public function status($id)
+    {
         $media = SocialMedia::find($id);
         if ($media) {
             $media->status = $media->status ? "0" : "1";
             $media->save();
-            $alert = $media->status ? "Media activated!" : "Media inactivated!";
+            $alert = $media->status ? "Media diaktifkan!" : "Media dinonaktifkan!";
             return back()->with("success", $alert);
         }
-        return back()->withErrors("Media not exists!");
+        return back()->withErrors("Media tidak ditemukan!");
     }
 
-    public function delete($id) {
+    public function delete($id)
+    {
         $media = SocialMedia::find($id);
         if ($media) {
             $media->delete();
-            return back()->with("success", "Media deleted!");
+            return back()->with("success", "Media berhasil dihapus!");
         }
-        return back()->withErrors("Media not exists!");
+        return back()->withErrors("Media tidak ditemukan!");
     }
 }

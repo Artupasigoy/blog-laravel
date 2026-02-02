@@ -14,11 +14,16 @@ class AdminMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
+    /**
+     * Membatasi akses halaman hanya untuk Super Admin.
+     */
     public function handle(Request $request, Closure $next): Response
     {
+        // Cek login & Role = 3 (Super Admin)
         if (Auth::check() && Auth::user()->role == 3) {
             return $next($request);
         }
+        // Jika bukan admin, return 404 (Not Found) untuk keamanan
         return abort(404);
     }
 }

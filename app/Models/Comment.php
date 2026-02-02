@@ -26,15 +26,21 @@ class Comment extends Model
         'status' => 'boolean',
     ];
 
-    public function user() {
+    // Relasi ke User (Penulis komentar)
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
 
-    public function post() {
+    // Relasi ke Post (Komentar pada artikel apa)
+    public function post()
+    {
         return $this->belongsTo(Post::class);
     }
 
-    public function replies() {
+    // Relasi ke Balasan (Recursive relationship)
+    public function replies()
+    {
         return $this->hasMany($this, "parent_id")->orderBy("created_at", "ASC");
     }
 }

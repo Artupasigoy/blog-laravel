@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Auth;
 
 class LogoutController extends Controller
 {
-    public function index() {
+    // Proses Logout
+    public function index()
+    {
         Auth::logout();
         return redirect()->route("frontend.home");
     }

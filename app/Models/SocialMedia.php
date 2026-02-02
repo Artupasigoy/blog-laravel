@@ -11,11 +11,11 @@ class SocialMedia extends Model
 
     protected $table = "social_media";
     protected $fillable = [
-        "title",
-        "icon",
-        "link",
-        "color",
-        "status",
+        "title", // Nama Platform (misal: Facebook)
+        "icon", // Kelas Icon FontAwesome
+        "link", // URL Profil
+        "color", // Warna Hex Brand
+        "status", // Tampilkan di footer?
     ];
 
     protected $casts = [
