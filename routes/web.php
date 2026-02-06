@@ -91,6 +91,8 @@ Route::name("dashboard.")->prefix("/dashboard")->middleware(["auth"])->group(fun
     Route::get("/media/{id}/view-trash", [MediaController::class, "viewTrashFile"])->name("media.view_trash");
     Route::get("/media/{id}/restore", [MediaController::class, "restore"])->name("media.restore");
     Route::delete("/media/{id}/delete", [MediaController::class, "delete"])->name("media.delete");
+    Route::post("/media/bulk-delete", [MediaController::class, "bulkDestroy"])->name("media.bulk_destroy");
+    Route::delete("/media/empty-trash", [MediaController::class, "emptyTrash"])->name("media.empty_trash");
     Route::resource("/media", MediaController::class)->except(["show", "edit", "update"]);
 
     // 4. Manajemen Komentar

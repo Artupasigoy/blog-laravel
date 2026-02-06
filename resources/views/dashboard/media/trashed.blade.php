@@ -26,6 +26,11 @@
                         <div class="card">
                             <div class="card-header">
                                 <h3 class="card-title">Trashed Media</h3>
+                                <div class="card-tools">
+                                    <button class="btn btn-danger btn-sm" id="empty-trash-btn">
+                                        <i class="fas fa-trash mr-1"></i> Empty Trash
+                                    </button>
+                                </div>
                             </div>
                             <div class="card-body">
                                 @if ($errors->any())
@@ -102,6 +107,28 @@
                 confirmButtonText: 'Yes, delete it!'
             }).then((result) => {
                 if (result.value) {
+                    form.submit();
+                }
+            });
+        });
+
+        $('#empty-trash-btn').on('click', function (e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "This will permanently delete all files in the trash! This action cannot be undone.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, empty trash!'
+            }).then((result) => {
+                if (result.value) {
+                    var form = $('<form action="{{ route("dashboard.media.empty_trash") }}" method="POST">' +
+                        '<input type="hidden" name="_token" value="{{ csrf_token() }}">' +
+                        '<input type="hidden" name="_method" value="DELETE">' +
+                        '</form>');
+                    $('body').append(form);
                     form.submit();
                 }
             });

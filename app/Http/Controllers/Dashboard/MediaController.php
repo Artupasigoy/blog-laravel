@@ -167,4 +167,60 @@ class MediaController extends Controller
         }
         abort(403);
     }
+
+    public function bulkDestroy(Request $request)
+    {
+        $ids = $request->ids;
+        if (!$ids) {
+            return back()->withErrors("Tidak ada media yang dipilih!");
+        }
+
+        $count = 0;
+        foreach ($ids as $id) {
+            $media = Media::find($id);
+            if ($media && Gate::allows("update-media", $media)) {
+                // Move file to trash directory
+                $sourcePath = public_path("uploads/media/" . $media->file_name);
+                $destPath = storage_path("app/trash/" . $media->file_name);
+
+                if (File::exists($sourcePath)) {
+                    // Ensure trash directory exists
+                    if (!File::exists(storage_path("app/trash"))) {
+                        File::makeDirectory(storage_path("app/trash"), 0755, true);
+                    }
+                    File::move($sourcePath, $destPath);
+                }
+
+                $media->delete();
+                $count++;
+            }
+        }
+
+        return back()->with("success", "$count media berhasil dipindahkan ke sampah!");
+    }
+
+    public function emptyTrash()
+    {
+        if (Auth::user()->role == 3) {
+            $media = Media::onlyTrashed()->get();
+        } else {
+            $media = User::find(Auth::id())->media()->onlyTrashed()->get();
+        }
+
+        $count = 0;
+        foreach ($media as $item) {
+            if (Gate::allows("update-media", $item)) {
+                // Delete file from trash directory
+                $trashPath = storage_path("app/trash/" . $item->file_name);
+                if (File::exists($trashPath)) {
+                    File::delete($trashPath);
+                }
+
+                $item->forceDelete();
+                $count++;
+            }
+        }
+
+        return back()->with("success", "$count media berhasil dihapus permanen dari sampah!");
+    }
 }
