@@ -41,13 +41,14 @@ class CommentController extends Controller
             }
 
             if (Auth::check()) {
-                // User Login: Komentar langsung tampil (Approved)
+                // User Login: Komentar butuh moderasi (Status = 0)
                 Comment::create([
                     "message" => $validated["message"],
                     "post_id" => $post->id,
-                    "user_id" => Auth::id()
+                    "user_id" => Auth::id(),
+                    "status" => "0"
                 ]);
-                return redirect()->route("frontend.post", $post->slug . "#comment-form")->with("success", "Komentar berhasil diposting!");
+                return redirect()->route("frontend.post", $post->slug . "#comment-form")->with("success", "Komentar terkirim! Menunggu moderasi admin.");
             } else {
                 // Guest: Komentar butuh moderasi (Status = 0)
                 Comment::create([
@@ -84,9 +85,10 @@ class CommentController extends Controller
                     "message" => $validated["message"],
                     "post_id" => $comment->post->id,
                     "parent_id" => $validated["id"],
-                    "user_id" => Auth::id()
+                    "user_id" => Auth::id(),
+                    "status" => "0"
                 ]);
-                return redirect()->route("frontend.post", $comment->post->slug . "#comment-form")->with("success", "Balasan komentar berhasil diposting!");
+                return redirect()->route("frontend.post", $comment->post->slug . "#comment-form")->with("success", "Balasan terkirim! Menunggu moderasi admin.");
             } else {
                 Comment::create([
                     "message" => $validated["message"],

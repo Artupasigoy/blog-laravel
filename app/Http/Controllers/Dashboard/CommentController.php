@@ -11,28 +11,34 @@ use Illuminate\Support\Facades\Gate;
 class CommentController extends Controller
 {
     // Menampilkan daftar komentar
-    public function index()
+    // Menampilkan daftar komentar
+    public function index(Request $request)
     {
-        if (Auth::user()->role == 3) {
-            // Admin: Lihat semua komentar
-            $comments = Comment::with([
-                "post" => function ($q) {
-                    $q->withTrashed();
-                },
-                "user"
-            ])->orderBy("id", "DESC")->paginate(20);
-        } else {
+        $currentView = $request->get('view', 'published');
+
+        $query = Comment::with([
+            "post" => function ($q) {
+                $q->withTrashed();
+            },
+            "user"
+        ]);
+
+        if (Auth::user()->role != 3) {
             // User Biasa: Lihat komentar di postingan mereka saja
-            $comments = Comment::with([
-                "post" => function ($q) {
-                    $q->withTrashed();
-                },
-                "user"
-            ])->whereHas('post', function ($q) {
+            $query->whereHas('post', function ($q) {
                 $q->withTrashed()->where("user_id", Auth::id());
-            })->orderBy("id", "DESC")->paginate(20);
+            });
         }
-        return view("dashboard.comment.index", compact("comments"));
+
+        if ($currentView == 'pending') {
+            $query->where('status', 0);
+        } else {
+            $query->where('status', 1);
+        }
+
+        $comments = $query->orderBy("id", "DESC")->paginate(20);
+
+        return view("dashboard.comment.index", compact("comments", "currentView"));
     }
 
     public function show(string $id)
