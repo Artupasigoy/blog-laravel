@@ -3,21 +3,42 @@
         <div class="header-area">
             <div class="logo">
                 <a href="{{ route("frontend.home") }}">
-                    <img src="{{ asset("uploads/logo/".$sitesettings->logo_light) }}" alt="{{ $sitesettings->site_title }}" class="logo-dark"/>
-                    <img src="{{ asset("uploads/logo/".$sitesettings->logo_dark) }}" alt="{{ $sitesettings->site_title }}" class="logo-white"/>
+                    <img src="{{ asset("uploads/logo/" . $sitesettings->logo_light) }}"
+                        alt="{{ $sitesettings->site_title }}" class="logo-dark" />
+                    <img src="{{ asset("uploads/logo/" . $sitesettings->logo_dark) }}"
+                        alt="{{ $sitesettings->site_title }}" class="logo-white" />
                 </a>
             </div>
             <div class="header-navbar">
                 <nav class="navbar">
                     <div class="collapse navbar-collapse" id="main_nav">
                         @if (count($menu) > 0)
-                        <ul class="navbar-nav">
-                            @foreach ($menu as $item)
-                            <li class="nav-item">
-                                <a class="nav-link{{ request()->url() == $item["href"] ? " active" : "" }}" href="{{ $item["href"] }}">{{ $item["text"] }}</a>
-                            </li>
-                            @endforeach
-                        </ul>
+                            <ul class="navbar-nav">
+                                @foreach ($menu as $item)
+                                    @if (isset($item["children"]) && count($item["children"]) > 0)
+                                        {{-- Menu dengan submenu --}}
+                                        <li class="nav-item dropdown">
+                                            <a class="nav-link dropdown-toggle" href="{{ $item["href"] }}"
+                                                id="navbarDropdown{{ $loop->index }}" role="button" data-toggle="dropdown"
+                                                aria-haspopup="true" aria-expanded="false">
+                                                {{ $item["text"] }}
+                                            </a>
+                                            <div class="dropdown-menu" aria-labelledby="navbarDropdown{{ $loop->index }}">
+                                                @foreach ($item["children"] as $child)
+                                                    <a class="dropdown-item{{ request()->url() == $child["href"] ? " active" : "" }}"
+                                                        href="{{ $child["href"] }}">{{ $child["text"] }}</a>
+                                                @endforeach
+                                            </div>
+                                        </li>
+                                    @else
+                                        {{-- Menu biasa tanpa submenu --}}
+                                        <li class="nav-item">
+                                            <a class="nav-link{{ request()->url() == $item["href"] ? " active" : "" }}"
+                                                href="{{ $item["href"] }}">{{ $item["text"] }}</a>
+                                        </li>
+                                    @endif
+                                @endforeach
+                            </ul>
                         @endif
                     </div>
                 </nav>
@@ -36,13 +57,13 @@
                     <i class="las la-search"></i>
                 </div>
                 @auth
-                <div class="botton-sub">
-                    <a href="{{ route("dashboard.home") }}" class="btn-subscribe">Dashboard</a>
-                </div>
+                    <div class="botton-sub">
+                        <a href="{{ route("dashboard.home") }}" class="btn-subscribe">Dashboard</a>
+                    </div>
                 @else
-                <div class="botton-sub">
-                    <a href="{{ route("auth.login") }}" class="btn-subscribe">Log In</a>
-                </div>
+                    <div class="botton-sub">
+                        <a href="{{ route("auth.login") }}" class="btn-subscribe">Log In</a>
+                    </div>
                 @endauth
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#main_nav"
                     aria-expanded="false" aria-label="Toggle navigation">

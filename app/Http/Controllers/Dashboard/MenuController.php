@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\Menu;
 use Illuminate\Http\Request;
 
+use App\Models\Page;
+
 class MenuController extends Controller
 {
     public function header()
     {
         $menu = Menu::first()->header_menu;
-        return view("dashboard.setting.menu.header", compact("menu"));
+        $pages = Page::where('status', 1)->get();
+        return view("dashboard.setting.menu.header", compact("menu", "pages"));
     }
 
     public function footer()
