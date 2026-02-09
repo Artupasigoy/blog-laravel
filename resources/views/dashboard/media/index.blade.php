@@ -23,34 +23,27 @@
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title">All Media</h3>
-                                <div class="card-tools">
-
-                                    <div id="selection-actions">
-                                        <div class="btn-group">
-                                            <button type="button" class="btn btn-default btn-sm dropdown-toggle"
-                                                data-toggle="dropdown">
-                                                Action
-                                            </button>
-                                            <div class="dropdown-menu dropdown-menu-right">
-                                                <a class="dropdown-item" href="#" id="select-all-item">
-                                                    <i class="far fa-square mr-1"></i> Select All
-                                                </a>
-                                                <a class="dropdown-item" href="#" id="unselect-all-item">
-                                                    <i class="far fa-square mr-1"></i> Unselect All
-                                                </a>
-                                                <div class="dropdown-divider"></div>
-                                                <a class="dropdown-item text-danger" href="#" id="delete-selected-item">
-                                                    <i class="fas fa-trash mr-1"></i> Delete Selected
-                                                </a>
-                                            </div>
+                            <div class="card-body">
+                                <div id="selection-actions">
+                                    <div class="btn-group mb-3">
+                                        <button type="button" class="btn btn-default btn-sm dropdown-toggle"
+                                            data-toggle="dropdown">
+                                            Action
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item" href="#" id="select-all-item">
+                                                <i class="far fa-square mr-1"></i> Select All
+                                            </a>
+                                            <a class="dropdown-item" href="#" id="unselect-all-item">
+                                                <i class="far fa-square mr-1"></i> Unselect All
+                                            </a>
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item text-danger" href="#" id="delete-selected-item">
+                                                <i class="fas fa-trash mr-1"></i> Delete Selected
+                                            </a>
                                         </div>
-
                                     </div>
                                 </div>
-                            </div>
-                            <div class="card-body">
                                 @if ($errors->any())
                                     <div class="alert alert-danger alert-dismissible">
                                         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
@@ -73,19 +66,20 @@
                                     <div class="row">
                                         @forelse ($media as $item)
                                             <div
-                                                class="col-md-3 mx-auto border p-1 d-flex flex-column justify-content-between position-relative">
+                                                class="col-md-3 mx-auto border p-1 d-flex flex-column justify-content-between position-relative mb-4">
                                                 <div class="position-absolute checkbox-wrapper"
-                                                    style="top: 5px; right: 5px; z-index: 10;">
+                                                    style="top: 5px; left: 5px; z-index: 10;">
                                                     <div class="custom-control custom-checkbox"
-                                                        style="transform: scale(1.5); transform-origin: top right;">
+                                                        style="transform: scale(1.5); transform-origin: top left;">
                                                         <input class="custom-control-input media-checkbox" type="checkbox"
                                                             name="ids[]" id="media-{{ $item->id }}" value="{{ $item->id }}">
                                                         <label for="media-{{ $item->id }}" class="custom-control-label"></label>
                                                     </div>
                                                 </div>
-                                                <div class="image position-relative">
-                                                    <img class="img-fluid"
-                                                        src="{{ asset("uploads/media/" . $item->file_name) }}" />
+                                                <div class="image position-relative d-flex align-items-center justify-content-center bg-light"
+                                                    style="height: 200px; overflow: hidden;">
+                                                    <img class="img-fluid" style="max-height: 100%; width: auto;"
+                                                        src="{{ route('dashboard.media.thumbnail', $item->id) }}" />
                                                 </div>
                                                 <div class="p-2 text-center text-muted" style="font-size: 0.8rem;">
                                                     <div class="text-truncate" title="{{ $item->file_name }}">
@@ -94,14 +88,14 @@
                                                     <div>{{ $item->file_size }}</div>
                                                 </div>
                                                 <div class="image-footer d-flex justify-content-center text-center mt-2">
+                                                    <button type="button" class="btn btn-info btn-sm viewbtn mr-1"
+                                                        data-src="{{ asset("uploads/media/" . $item->file_name) }}"
+                                                        data-title="{{ $item->file_name }}">
+                                                        Lihat
+                                                    </button>
                                                     <button type="button" class="btn btn-primary btn-sm copybtn mr-1"
                                                         data-clipboard-text="{{ asset("uploads/media/" . $item->file_name) }}">Copy</button>
-                                                    {{-- <form action="{{ route(" dashboard.media.destroy", $item->id) }}"
-                                                        method="POST">
-                                                        @csrf
-                                                        @method("DELETE")
-                                                        <button class="btn btn-danger btn-sm deletebtn">Delete</button>
-                                                    </form> --}}
+
                                                     <button type="button" class="btn btn-danger btn-sm deletebtn-single"
                                                         data-id="{{ $item->id }}">Delete</button>
                                                 </div>
@@ -126,6 +120,37 @@
 @endsection
 
 @section("script")
+    <style>
+        .swal2-custom-popup {
+            width: auto !important;
+            max-width: 60vw !important;
+            /* Desktop width */
+            padding: 1rem !important;
+        }
+
+        .swal2-custom-popup .swal2-image {
+            max-height: 80vh !important;
+            object-fit: contain !important;
+            margin: 0 auto 10px auto !important;
+        }
+
+        @media (max-width: 768px) {
+            .swal2-custom-popup {
+                max-width: 95vw !important;
+                /* Mobile width */
+                padding: 0.5rem !important;
+            }
+
+            .swal2-custom-popup .swal2-image {
+                max-height: 60vh !important;
+                /* Smaller max-height on mobile */
+            }
+
+            .swal2-custom-popup .swal2-title {
+                font-size: 1.2rem !important;
+            }
+        }
+    </style>
     <script src="{{ asset("assets/dashboard/plugins/sweetalert2/sweetalert2.all.js") }}"></script>
     <script src="{{ asset("assets/dashboard/plugins/clipboardjs/clipboard.min.js") }}"></script>
     <script>
@@ -234,6 +259,24 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     bulkForm.submit();
+                }
+            });
+        });
+
+
+        // View Image
+        $('.viewbtn').on('click', function (e) {
+            e.preventDefault();
+            var src = $(this).data('src');
+            var title = $(this).data('title');
+            Swal.fire({
+                title: title,
+                imageUrl: src,
+                imageAlt: title,
+                showCloseButton: true,
+                showConfirmButton: false,
+                customClass: {
+                    popup: 'swal2-custom-popup'
                 }
             });
         });

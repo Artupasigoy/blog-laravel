@@ -223,4 +223,101 @@ class MediaController extends Controller
 
         return back()->with("success", "$count media berhasil dihapus permanen dari sampah!");
     }
+    public function thumbnail($id)
+    {
+        $media = Media::find($id);
+        if (!$media) {
+            return abort(404);
+        }
+
+        $originalPath = public_path("uploads/media/" . $media->file_name);
+        $thumbnailDir = public_path("uploads/media/thumbnails");
+        $thumbnailPath = $thumbnailDir . "/" . $media->file_name;
+
+        // Jika file asli tidak ada, return 404
+        if (!File::exists($originalPath)) {
+            return abort(404);
+        }
+
+        // Jika thumbnail sudah ada, langsung tampilkan
+        if (File::exists($thumbnailPath)) {
+            return response()->file($thumbnailPath);
+        }
+
+        // Buat folder thumbnail jika belum ada
+        if (!File::exists($thumbnailDir)) {
+            File::makeDirectory($thumbnailDir, 0755, true);
+        }
+
+        // Logic Resize gambar menggunakan Native GD
+        $info = getimagesize($originalPath);
+        $mime = $info['mime'];
+        $width = $info[0];
+        $height = $info[1];
+
+        // Target width 300px, height menyesuaikan aspect ratio
+        $targetWidth = 300;
+        $targetHeight = floor($height * ($targetWidth / $width));
+
+        // Buat resource gambar baru
+        $imageResized = imagecreatetruecolor($targetWidth, $targetHeight);
+
+        // Load gambar asli berdasarkan tipe
+        switch ($mime) {
+            case 'image/jpeg':
+                $imageSource = imagecreatefromjpeg($originalPath);
+                break;
+            case 'image/png':
+                $imageSource = imagecreatefrompng($originalPath);
+                // Pertahankan transparansi untuk PNG
+                imagealphablending($imageResized, false);
+                imagesavealpha($imageResized, true);
+                break;
+            case 'image/gif':
+                $imageSource = imagecreatefromgif($originalPath);
+                // Pertahankan transparansi untuk GIF
+                $transparentIndex = imagecolortransparent($imageSource);
+                if ($transparentIndex >= 0) {
+                    $transparentColor = imagecolorsforindex($imageSource, $transparentIndex);
+                    $transparentIndex = imagecolorallocate($imageResized, $transparentColor['red'], $transparentColor['green'], $transparentColor['blue']);
+                    imagefill($imageResized, 0, 0, $transparentIndex);
+                    imagecolortransparent($imageResized, $transparentIndex);
+                }
+                break;
+            case 'image/webp':
+                $imageSource = imagecreatefromwebp($originalPath);
+                // Pertahankan transparansi untuk WEBP
+                imagealphablending($imageResized, false);
+                imagesavealpha($imageResized, true);
+                break;
+            default:
+                // Jika format tidak didukung resize (misal SVG), return file asli
+                return response()->file($originalPath);
+        }
+
+        // Resize
+        imagecopyresampled($imageResized, $imageSource, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
+
+        // Simpan thumbnail
+        switch ($mime) {
+            case 'image/jpeg':
+                imagejpeg($imageResized, $thumbnailPath, 80); // Quality 80
+                break;
+            case 'image/png':
+                imagepng($imageResized, $thumbnailPath, 6); // Compression level 6
+                break;
+            case 'image/gif':
+                imagegif($imageResized, $thumbnailPath);
+                break;
+            case 'image/webp':
+                imagewebp($imageResized, $thumbnailPath, 80);
+                break;
+        }
+
+        // Bersihkan memori
+        imagedestroy($imageSource);
+        imagedestroy($imageResized);
+
+        return response()->file($thumbnailPath);
+    }
 }

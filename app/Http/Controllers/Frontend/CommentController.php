@@ -25,12 +25,12 @@ class CommentController extends Controller
 
         if ($post) {
             $rules = [
-                "message" => ["required", "string", "min:3"],
+                "message" => ["required", "string", "min:3", "max:500"],
             ];
 
             // Aturan tambahan untuk Guest (Tamu)
             if (!Auth::check()) {
-                $rules["name"] = ["required", "string", "min:3", "max:100"];
+                $rules["name"] = ["required", "string", "min:3", "max:50"];
                 $rules["email"] = ["required", "email:rfc", "max:255"];
             }
             $validated = $request->validate($rules);
@@ -67,11 +67,11 @@ class CommentController extends Controller
     public function reply(Request $request)
     {
         $rules = [
-            "message" => ["required", "string", "min:3"],
+            "message" => ["required", "string", "min:3", "max:500"],
             "id" => ["required", "integer"],
         ];
         if (!Auth::check()) {
-            $rules["name"] = ["required", "string", "min:3", "max:100"];
+            $rules["name"] = ["required", "string", "min:3", "max:50"];
             $rules["email"] = ["required", "email:rfc", "max:255"];
         }
         $validated = $request->validate($rules);

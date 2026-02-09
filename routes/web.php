@@ -82,6 +82,8 @@ Route::name("dashboard.")->prefix("/dashboard")->middleware(["auth"])->group(fun
         Route::get("/trashed", "trashed")->name("trashed");
         Route::get("/{id}/restore", "restore")->name("restore");
         Route::delete("/{id}/delete", "delete")->name("delete"); // Hapus Permanen
+        Route::delete("/empty-trash", "emptyTrash")->name("empty_trash");
+        Route::post("/bulk-action", "bulkAction")->name("bulk_action");
     });
     Route::resource("/posts", DashboardPostController::class)->except(["show"]);
 
@@ -91,6 +93,7 @@ Route::name("dashboard.")->prefix("/dashboard")->middleware(["auth"])->group(fun
     Route::get("/media/{id}/view-trash", [MediaController::class, "viewTrashFile"])->name("media.view_trash");
     Route::get("/media/{id}/restore", [MediaController::class, "restore"])->name("media.restore");
     Route::delete("/media/{id}/delete", [MediaController::class, "delete"])->name("media.delete");
+    Route::get("/media/{id}/thumbnail", [MediaController::class, "thumbnail"])->name("media.thumbnail");
     Route::post("/media/bulk-delete", [MediaController::class, "bulkDestroy"])->name("media.bulk_destroy");
     Route::delete("/media/empty-trash", [MediaController::class, "emptyTrash"])->name("media.empty_trash");
     Route::resource("/media", MediaController::class)->except(["show", "edit", "update"]);
@@ -98,9 +101,11 @@ Route::name("dashboard.")->prefix("/dashboard")->middleware(["auth"])->group(fun
     // 4. Manajemen Komentar
     Route::prefix("/comments")->name("comments.")->controller(DashboardCommentController::class)->group(function () {
         Route::get("/{id}/status", "status")->name("status");   // Setujui/Tolak
+        Route::post("/bulk-action", "bulkAction")->name("bulk_action");
         Route::get("/trashed", "trashed")->name("trashed");
         Route::get("/{id}/restore", "restore")->name("restore");
         Route::delete("/{id}/delete", "delete")->name("delete");
+        Route::delete("/empty-trash", "emptyTrash")->name("empty_trash");
     });
     Route::resource("/comments", DashboardCommentController::class)->only(["index", "show", "destroy"]);
 
@@ -110,6 +115,8 @@ Route::name("dashboard.")->prefix("/dashboard")->middleware(["auth"])->group(fun
         Route::get("/trashed", "trashed")->name("trashed");
         Route::get("/{id}/restore", "restore")->name("restore");
         Route::delete("/{id}/delete", "delete")->name("delete");
+        Route::post("/bulk-action", "bulkAction")->name("bulk_action");
+        Route::delete("/empty-trash", "emptyTrash")->name("empty_trash");
     });
     Route::resource("/categories", DashboardCategoryController::class)->middleware(["admin"]);
 

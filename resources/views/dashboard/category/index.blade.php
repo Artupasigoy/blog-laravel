@@ -7,7 +7,11 @@
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0">All Categories</h1>
+                    <h1 class="m-0 d-inline-block">All Categories</h1>
+                    <a href="{{ route('dashboard.categories.create') }}" class="btn btn-primary btn-sm ml-2"
+                        style="vertical-align: middle;">
+                        <i class="fas fa-plus"></i> Add New
+                    </a>
                 </div>
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
@@ -23,10 +27,32 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">All Categories</h3>
-                        </div>
                         <div class="card-body">
+                            <div id="selection-actions" class="{{ $categories->count() > 0 ? '' : 'd-none' }}">
+                                <div class="btn-group mb-3">
+                                    <button type="button" class="btn btn-default btn-sm dropdown-toggle"
+                                        data-toggle="dropdown">
+                                        Action
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <a class="dropdown-item" href="#" id="activate-selected-item">
+                                            <i class="fas fa-check mr-1 text-success"></i> Activate Selected
+                                        </a>
+                                        <a class="dropdown-item" href="#" id="deactivate-selected-item">
+                                            <i class="fas fa-ban mr-1 text-warning"></i> Deactivate Selected
+                                        </a>
+                                        <a class="dropdown-item text-danger" href="#" id="delete-selected-item">
+                                            <i class="fas fa-trash mr-1"></i> Delete Selected
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <form action="{{ route('dashboard.categories.bulk_action') }}" method="POST"
+                                id="bulk-action-form" class="d-none">
+                                @csrf
+                                <input type="hidden" name="action" id="bulk-action-input">
+                                <div id="bulk-ids-container"></div>
+                            </form>
                             @if ($errors->any())
                             <div class="alert alert-danger alert-dismissible">
                                 <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
@@ -47,6 +73,13 @@
                                 <table class="table table-bordered">
                                     <thead>
                                         <tr>
+                                            <th style="width: 40px;" class="text-center">
+                                                <div class="custom-control custom-checkbox">
+                                                    <input class="custom-control-input" type="checkbox"
+                                                        id="master-checkbox">
+                                                    <label for="master-checkbox" class="custom-control-label"></label>
+                                                </div>
+                                            </th>
                                             <th class="text-center">#</th>
                                             <th class="text-center">Image</th>
                                             <th class="text-center">Title</th>
@@ -58,6 +91,14 @@
                                     <tbody>
                                         @forelse ($categories as $category)
                                         <tr>
+                                            <td class="text-center">
+                                                <div class="custom-control custom-checkbox">
+                                                    <input class="custom-control-input item-checkbox" type="checkbox"
+                                                        id="cat-{{ $category->id }}" value="{{ $category->id }}">
+                                                    <label for="cat-{{ $category->id }}"
+                                                        class="custom-control-label"></label>
+                                                </div>
+                                            </td>
                                             <td class="text-center">{{ $loop->index + $categories->firstItem() }}</td>
                                             <td class="text-center">
                                                 <img width="100px" height="100px" src="{{ asset("uploads/category/".($category->image ?? "default.webp")) }}" alt="{{ $category->title }}"/>
@@ -79,7 +120,7 @@
                                         </tr>
                                         @empty
                                         <tr>
-                                            <td colspan="6" class="text-center">No category found!</td>
+                                            <td colspan="7" class="text-center">No category found!</td>
                                         </tr>
                                         @endforelse
                                     </tbody>
@@ -102,22 +143,91 @@
 @section("script")
 <script src="{{ asset("assets/dashboard/plugins/sweetalert2/sweetalert2.all.js") }}"></script>
 <script>
-$('.deletebtn').on('click',function(e){
-    e.preventDefault();
-    var form = $(this).parents('form');
-    Swal.fire({
-        title: 'Are you sure?',
-        type: 'warning',
-        icon: 'warning',
-        text: 'All posts of this category will delete!',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!'
-    }).then((result) => {
-        if (result.value) {
-            form.submit();
+$(document).ready(function() {
+    var checkboxes = $('.item-checkbox');
+    var masterCheckbox = $('#master-checkbox');
+    var bulkForm = $('#bulk-action-form');
+    var bulkActionInput = $('#bulk-action-input');
+    var deleteSelectedItem = $('#delete-selected-item');
+    var activateSelectedItem = $('#activate-selected-item');
+    var deactivateSelectedItem = $('#deactivate-selected-item');
+
+    // Master checkbox toggle
+    masterCheckbox.on('change', function() {
+        checkboxes.prop('checked', $(this).is(':checked'));
+    });
+
+    // Update master checkbox when individual checkboxes are changed
+    checkboxes.on('change', function() {
+        var allChecked = checkboxes.length === checkboxes.filter(':checked').length;
+        masterCheckbox.prop('checked', allChecked);
+    });
+
+    function submitBulkAction(action, confirmMessage, confirmButtonText, confirmButtonColor) {
+        var selectedCount = checkboxes.filter(':checked').length;
+        if (selectedCount === 0) {
+            Swal.fire('No categories selected', 'Please select at least one category.', 'warning');
+            return;
         }
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: confirmMessage.replace('{count}', selectedCount),
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: confirmButtonColor,
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: confirmButtonText.replace('{count}', selectedCount)
+        }).then((result) => {
+            if (result.value) {
+                bulkActionInput.val(action);
+
+                // Collect IDs
+                const idsContainer = $('#bulk-ids-container');
+                idsContainer.empty();
+
+                checkboxes.filter(':checked').each(function () {
+                    idsContainer.append(`<input type="hidden" name="ids[]" value="${$(this).val()}">`);
+                });
+
+                bulkForm.submit();
+            }
+        });
+    }
+
+    deleteSelectedItem.on('click', function (e) {
+        e.preventDefault();
+        submitBulkAction('delete', "You want to delete {count} selected categories?", 'Yes, delete {count} categories!', '#d33');
+    });
+
+    activateSelectedItem.on('click', function (e) {
+        e.preventDefault();
+        submitBulkAction('activate', "You want to activate {count} selected categories?", 'Yes, activate {count} categories!', '#28a745');
+    });
+
+    deactivateSelectedItem.on('click', function (e) {
+        e.preventDefault();
+        submitBulkAction('deactivate', "You want to deactivate {count} selected categories?", 'Yes, deactivate {count} categories!', '#ffc107');
+    });
+
+    // Single delete confirmation
+    $('.deletebtn').on('click',function(e){
+        e.preventDefault();
+        var form = $(this).parents('form');
+        Swal.fire({
+            title: 'Are you sure?',
+            type: 'warning',
+            icon: 'warning',
+            text: 'All posts of this category will be deleted!',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.value) {
+                form.submit();
+            }
+        });
     });
 });
 </script>

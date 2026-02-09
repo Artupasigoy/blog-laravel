@@ -33,7 +33,7 @@ class AuthServiceProvider extends ServiceProvider
             if ($user->role == User::IS_ADMIN) {
                 return true;
             }
-            return $user->id === $comment->post->user_id;
+            return $comment->post && $user->id === $comment->post->user_id;
         });
 
         Gate::define("update-media", function (User $user, $media) {

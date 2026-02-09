@@ -16,14 +16,36 @@ use Illuminate\Validation\Rule;
 
 class PostController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        if (Auth::user()->role == 3) {
-            $posts = Post::with(["category", "tags", "user"])->withCount(["comments"])->orderBy("id", "DESC")->paginate(20);
-        } else {
-            $posts = Post::with(["category", "tags", "user"])->withCount(["comments"])->orderBy("id", "DESC")->where("user_id", Auth::id())->paginate(20);
+        $currentView = $request->get('view', 'all');
+
+        $baseQuery = Post::query();
+        if (Auth::user()->role != 3) {
+            $baseQuery->where("user_id", Auth::id());
         }
-        return view("dashboard.post.index", compact("posts"));
+
+        // Get counts for tabs
+        $countAll = (clone $baseQuery)->count();
+        $countPublished = (clone $baseQuery)->where('status', "1")->count();
+        $countDraft = (clone $baseQuery)->where('status', "0")->count();
+
+        $query = Post::with(["category", "tags", "user"])->withCount(["comments"]);
+
+        if (Auth::user()->role != 3) {
+            $query->where("user_id", Auth::id());
+        }
+
+        // Filter by status
+        if ($currentView == 'published') {
+            $query->where('status', "1");
+        } elseif ($currentView == 'draft') {
+            $query->where('status', "0");
+        }
+
+        $posts = $query->orderBy("id", "DESC")->paginate(20);
+
+        return view("dashboard.post.index", compact("posts", "currentView", "countAll", "countPublished", "countDraft"));
     }
 
     public function create()
@@ -269,4 +291,77 @@ class PostController extends Controller
         return back()->withErrors("Post not exists!");
     }
 
+    public function emptyTrash()
+    {
+        $query = Post::onlyTrashed();
+        if (Auth::user()->role != 3) {
+            $query->where("user_id", Auth::id());
+        }
+
+        $posts = $query->get();
+        $count = $posts->count();
+
+        if ($count == 0) {
+            return back()->withErrors("Tidak ada postingan di sampah!");
+        }
+
+        foreach ($posts as $post) {
+            if (File::exists(public_path("uploads/post/" . $post->thumbnail))) {
+                File::delete(public_path("uploads/post/" . $post->thumbnail));
+            }
+            $post->tags()->sync([]);
+            $post->comments()->forceDelete();
+            $post->forceDelete();
+        }
+
+        return back()->with("success", "$count postingan berhasil dihapus permanen dari sampah!");
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $ids = $request->ids;
+        $action = $request->action;
+
+        if (!$ids || !is_array($ids)) {
+            return back()->withErrors("Tidak ada post yang dipilih!");
+        }
+
+        $count = 0;
+        foreach ($ids as $id) {
+            $post = Post::find($id);
+            if ($post && Gate::allows("update-post", $post)) {
+                if ($action == 'delete') {
+                    $post->delete();
+                    $count++;
+                } elseif ($action == 'draft') {
+                    if (Auth::user()->role == 1)
+                        continue; // User biasa tidak bisa ubah status, tapi gate update-post handle ini? Gate update-post allows update own post. But status change might be restricted. Ideally check permissions.
+                    // But wait, user role 1 posts are always drafted on create/update. So setting to draft is fine.
+                    $post->status = "0";
+                    $post->save();
+                    $count++;
+                } elseif ($action == 'publish') {
+                    if (Auth::user()->role == 1)
+                        continue; // User biasa tidak bisa publish
+                    $post->status = "1";
+                    $post->save();
+                    $count++;
+                }
+            }
+        }
+
+        if ($count == 0) {
+            return back()->withErrors("Tidak ada aksi yang berhasil dijalankan (Mungkin masalah izin).");
+        }
+
+        $msg = "";
+        if ($action == 'delete')
+            $msg = "$count post berhasil dihapus!";
+        elseif ($action == 'draft')
+            $msg = "$count post berhasil diubah menjadi Draft!";
+        elseif ($action == 'publish')
+            $msg = "$count post berhasil di-Publish!";
+
+        return back()->with("success", $msg);
+    }
 }

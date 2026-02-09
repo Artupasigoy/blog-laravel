@@ -47,7 +47,7 @@
                             <form action="{{ route("dashboard.pages.store") }}" method="POST">
                                 @csrf
                                 <div class="row">
-                                    <div class="col-md-12 mx-auto">
+                                    <div class="col-md-8 mx-auto">
                                         <div class="form-group">
                                             <label for="title">Title</label>
                                             <input type="text" class="form-control" id="title" name="title" placeholder="Enter title" value="{{ old('title') }}"/>
@@ -60,6 +60,8 @@
                                             <label for="content">Content</label>
                                             <textarea class="form-control" id="content" name="content" placeholder="Write content">{{ old('content') }}</textarea>
                                         </div>
+                                    </div>
+                                    <div class="col-md-4 mx-auto">
                                         <div class="form-group">
                                             <label for="status">Status</label>
                                             <select class="form-control" name="status" id="status">
@@ -69,10 +71,12 @@
                                         </div>
                                     </div>
                                 </div>
-                                <button class="btn btn-primary" type="submit">Publish</button>
-                            </form>
                         </div>
                     </div>
+                    <button class="btn btn-primary" type="submit">Publish</button>
+                    </form>
+                    {{-- Include Media Manager Modal --}}
+                    @include('dashboard.inc.media_modal')
                 </div>
             </div>
         </div>
@@ -95,9 +99,158 @@
         $('#title').on("input", () => {
             $('#slug').val($.slugify($('#title').val()));
         });
+
+        // Custom Button untuk Summernote
+        var MediaButton = function (context) {
+            var ui = $.summernote.ui;
+            var button = ui.button({
+                contents: '<i class="fas fa-image"/> Media',
+                tooltip: 'Media Manager',
+                click: function () {
+                    $('#mediaManagerModal').data('origin', 'editor');
+                    $('#mediaManagerModal').modal('show');
+                }
+            });
+            return button.render();
+        }
+
         $("#content").summernote({
             placeholder: 'Write content...',
-            height: 200,
+            height: 170,
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'underline', 'clear']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['table', ['table']],
+                ['insert', ['link', 'mediaManager']],
+                ['view', ['fullscreen', 'codeview', 'help']]
+            ],
+            buttons: {
+                mediaManager: MediaButton
+            }
+        });
+
+        // ==============================================
+        // LOGIKA MEDIA MANAGER
+        // ==============================================
+        let selectedMediaFile = null;
+
+        $('#mediaManagerModal').on('show.bs.modal', function (e) {
+            if (!$(this).data('origin')) {
+                $(this).data('origin', 'thumbnail');
+            }
+            loadMediaLibrary();
+        });
+
+        $('#mediaManagerModal').on('hidden.bs.modal', function (e) {
+            $(this).removeData('origin');
+        });
+
+        function loadMediaLibrary() {
+            $('#media-grid').html('');
+            $('#media-loader').show();
+
+            $.ajax({
+                url: "{{ route('dashboard.media.api') }}",
+                type: "GET",
+                success: function (response) {
+                    $('#media-loader').hide();
+                    if (response.length > 0) {
+                        response.forEach(function (media) {
+                            let mediaHtml = `
+                                <div class="col-6 col-md-3 mb-3">
+                                    <div class="media-item border p-1" onclick="selectMedia(this, '${media.file_name}')" style="cursor: pointer;">
+                                        <img src="{{ asset('uploads/media') }}/${media.file_name}" class="media-img img-fluid" loading="lazy" style="height: 100px; object-fit: cover; width: 100%;">
+                                        <div class="p-1 text-center text-muted" style="font-size: 0.75rem;">
+                                            <div class="text-truncate" title="${media.file_name}"><strong>${media.file_name}</strong></div>
+                                            <div>${media.file_size}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            $('#media-grid').append(mediaHtml);
+                        });
+                    } else {
+                        $('#media-grid').html('<div class="col-12 text-center text-muted py-5">Belum ada media. Silakan upload baru.</div>');
+                    }
+                },
+                error: function () {
+                    $('#media-loader').hide();
+                    $('#media-grid').html('<div class="col-12 text-center text-danger">Gagal memuat library.</div>');
+                }
+            });
+        }
+
+        window.selectMedia = function (element, fileName) {
+            $('.media-item').removeClass('selected');
+            $(element).addClass('selected');
+            selectedMediaFile = fileName;
+
+            $('#selected-image-name').text("Terpilih: " + fileName);
+            $('#btn-insert-media').prop('disabled', false);
+        }
+
+        $('#btn-insert-media').click(function () {
+            if (selectedMediaFile) {
+                let origin = $('#mediaManagerModal').data('origin');
+
+                if (origin === 'editor') {
+                    let imageUrl = "{{ asset('uploads/media') }}/" + selectedMediaFile;
+                    let imgNode = $('<img>').attr('src', imageUrl).addClass('img-fluid');
+                    $('#content').summernote('insertNode', imgNode[0]);
+                }
+
+                $('#mediaManagerModal').modal('hide');
+            }
+        });
+
+        $('#mm-file-input').change(function () {
+            let formData = new FormData($('#media-upload-form')[0]);
+
+            $('#upload-progress-container').removeClass('d-none');
+            $('#upload-progress').css('width', '0%');
+
+            $.ajax({
+                url: "{{ route('dashboard.media.store') }}",
+                type: "POST",
+                data: formData,
+                contentType: false,
+                processData: false,
+                xhr: function () {
+                    var xhr = new window.XMLHttpRequest();
+                    xhr.upload.addEventListener("progress", function (evt) {
+                        if (evt.lengthComputable) {
+                            var percentComplete = evt.loaded / evt.total;
+                            percentComplete = parseInt(percentComplete * 100);
+                            $('#upload-progress').css('width', percentComplete + '%');
+                        }
+                    }, false);
+                    return xhr;
+                },
+                success: function (response) {
+                    $('#upload-progress-container').addClass('d-none');
+                    $('#media-upload-form')[0].reset();
+                    $('#library-tab').tab('show');
+                    loadMediaLibrary();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: 'Media berhasil diupload!',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                },
+                error: function () {
+                    $('#upload-progress-container').addClass('d-none');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: 'Gagal mengupload gambar.'
+                    });
+                }
+            });
         });
     });
 </script>

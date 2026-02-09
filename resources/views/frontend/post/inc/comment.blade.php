@@ -88,7 +88,7 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <input type="text" name="name" id="name" class="form-control" placeholder="Name*"
-                                        required="required" value="{{ old("name") }}" />
+                                        required="required" value="{{ old("name") }}" maxlength="50" />
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -101,7 +101,8 @@
                         <div class="col-md-12">
                             <div class="form-group">
                                 <textarea name="message" id="message" cols="30" rows="5" class="form-control"
-                                    placeholder="Message*" required="required">{{ old("message") }}</textarea>
+                                    placeholder="Message*" required="required"
+                                    maxlength="500">{{ old("message") }}</textarea>
                             </div>
                         </div>
                         <div class="col-lg-12">

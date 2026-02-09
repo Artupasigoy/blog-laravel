@@ -24,14 +24,18 @@
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title">Trashed Media</h3>
-                                <div class="card-tools">
+                            @if ($media->count() > 0)
+                                <div class="card-header">
                                     <button class="btn btn-danger btn-sm" id="empty-trash-btn">
                                         <i class="fas fa-trash mr-1"></i> Empty Trash
                                     </button>
+                                    <form action="{{ route('dashboard.media.empty_trash') }}" method="POST"
+                                        id="empty-trash-form" class="d-none">
+                                        @csrf
+                                        @method('DELETE')
+                                    </form>
                                 </div>
-                            </div>
+                            @endif
                             <div class="card-body">
                                 @if ($errors->any())
                                     <div class="alert alert-danger alert-dismissible">
@@ -115,8 +119,8 @@
         $('#empty-trash-btn').on('click', function (e) {
             e.preventDefault();
             Swal.fire({
-                title: 'Are you sure?',
-                text: "This will permanently delete all files in the trash! This action cannot be undone.",
+                title: 'Empty Trash?',
+                text: "All trashed media will be permanently deleted!",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -124,12 +128,7 @@
                 confirmButtonText: 'Yes, empty trash!'
             }).then((result) => {
                 if (result.value) {
-                    var form = $('<form action="{{ route("dashboard.media.empty_trash") }}" method="POST">' +
-                        '<input type="hidden" name="_token" value="{{ csrf_token() }}">' +
-                        '<input type="hidden" name="_method" value="DELETE">' +
-                        '</form>');
-                    $('body').append(form);
-                    form.submit();
+                    $('#empty-trash-form').submit();
                 }
             });
         });

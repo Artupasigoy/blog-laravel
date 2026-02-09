@@ -182,4 +182,65 @@ class CategoryController extends Controller
         }
         return back()->withErrors("Kategori tidak ditemukan!");
     }
+
+    public function bulkAction(Request $request)
+    {
+        $request->validate([
+            "ids" => "required|array",
+            "action" => "required|string|in:delete,activate,deactivate"
+        ]);
+
+        $ids = $request->ids;
+        $count = 0;
+
+        foreach ($ids as $id) {
+            $category = Category::find($id);
+            if ($category) {
+                if ($request->action == "delete") {
+                    $category->delete();
+                    $count++;
+                } elseif ($request->action == "activate") {
+                    if ($category->status == 0) {
+                        $category->status = 1;
+                        $category->save();
+                        $count++;
+                    }
+                } elseif ($request->action == "deactivate") {
+                    if ($category->status == 1) {
+                        $category->status = 0;
+                        $category->save();
+                        $count++;
+                    }
+                }
+            }
+        }
+
+        $message = match ($request->action) {
+            "delete" => "$count kategori berhasil dihapus!",
+            "activate" => "$count kategori berhasil diaktifkan!",
+            "deactivate" => "$count kategori berhasil dinonaktifkan!",
+            default => "Aksi selesai!"
+        };
+        return back()->with("success", $message);
+    }
+
+    public function emptyTrash()
+    {
+        $categories = Category::onlyTrashed()->get();
+        $count = $categories->count();
+
+        if ($count == 0) {
+            return back()->withErrors("Tidak ada kategori di sampah!");
+        }
+
+        foreach ($categories as $category) {
+            if (File::exists(public_path("uploads/category/" . $category->image))) {
+                File::delete(public_path("uploads/category/" . $category->image));
+            }
+            $category->posts()->forceDelete();
+            $category->forceDelete();
+        }
+
+        return back()->with("success", "$count kategori berhasil dihapus permanen dari sampah!");
+    }
 }
